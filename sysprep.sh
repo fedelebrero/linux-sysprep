@@ -38,6 +38,7 @@ main() {
     remove_hostname
     remove_machine_id
     build_generic_initrd
+    force_logrotate
     clean_logs
 }
 
@@ -96,7 +97,7 @@ EOF
 }
 
 remove_net_persistent() {
-    rules='/etc/udev/rules.d/70-persistent-net.rules'
+    rules='/etc/udev/rules.d/70*'
     [ -f "$rules" ] || return
     verbose 'Removing persistent net UDEV rules'
     do_cmd rm -f "$rules"
@@ -123,6 +124,13 @@ build_generic_initrd() {
     verbose '- This may take a while...'
     do_cmd dracut --no-hostonly --force
     verbose '- done!'
+}
+
+force_logrotate() {
+    verbose 'Rotating logs'
+    logrotatecfg='/etc/logrotate.conf'
+    [ -f "$logrotatecfg" ] || return
+    do_cmd /usr/sbin/logrotate –f "$logrotatecfg"
 }
 
 clean_logs() {
