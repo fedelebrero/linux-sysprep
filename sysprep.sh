@@ -4,6 +4,9 @@
 # This script was designed to be compatible with all Linux systems with a
 # GNU-based userspace, but was only tested on RHEL7
 #
+# history -c seems to be problematic on non-english systems
+localectl set-locale LANG=en_US.utf8
+
 usage() {
 	cat 1>&2 <<EOF
 Usage $0 [OPTIONS]
@@ -163,7 +166,7 @@ remove_history() {
     verbose 'Removing bash history'
         do_cmd rm -f "/root/.bash_history"
         do_cmd unset HISTFILE
-        do_cmd history –c all
+        do_cmd history -c
 }
 
 
