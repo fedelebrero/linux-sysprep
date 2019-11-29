@@ -156,7 +156,7 @@ remove_history() {
     verbose 'Removing bash history'
         do_cmd rm -f "/root/.bash_history"
         do_cmd unset HISTFILE
-        do_cmd history –c
+        do_cmd history –c all
 }
 
 
