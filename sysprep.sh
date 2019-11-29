@@ -43,6 +43,7 @@ main() {
     force_logrotate
     remove_tmpfiles
     clean_logs
+    remove_passwd
     remove_history
 }
 
@@ -150,6 +151,12 @@ remove_tmpfiles() {
     verbose 'Removing tmp files'
         do_cmd rm -rf "/tmp/*"
         do_cmd rm -rf "/var/tmp/*"
+}
+
+remove_passwd() {
+    verbose 'Removing root password'
+        do_cmd passwd -d root
+        do_cmd passwd -e root
 }
 
 remove_history() {
