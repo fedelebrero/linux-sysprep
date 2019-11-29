@@ -32,14 +32,18 @@ really_do_cmd() {
 main() {
     parse_args "$@"
     remove_rhn_id
+    remove_unwanted_pkgs
+    stop_services
     remove_ssh_keys
-    remove_net_scripts
+    remove_net_identifiers
     remove_net_persistent
     remove_hostname
     remove_machine_id
     build_generic_initrd
     force_logrotate
+    remove_tmpfiles
     clean_logs
+    remove_history
 }
 
 parse_args() {
@@ -62,11 +66,22 @@ parse_args() {
     done
 }
 
+stop_services() {
+    verbose 'Stopping services'
+        do_cmd service rsyslog stop
+        do_cmd service auditd stop
+}
+
 remove_rhn_id() {
     local rhn_id='/etc/sysconfig/rhn/systemid'
     [[ -x "$rhn_id" ]] || return
     verbose 'Revoming RHN system ID'
     do_cmd rm -f "$rhn_id"
+}
+
+remove_unwanted_pkgs() {
+    verbose 'Removing net identifiers'
+        do_cmd package-cleanup --oldkernels --count=1 -y
 }
 
 remove_ssh_keys() {
@@ -76,24 +91,13 @@ remove_ssh_keys() {
         verbose "- $key"
         do_cmd rm -f "$key"
     done
+    do_cmd rm -rf "/root/.ssh/"
+    do_cmd rm -f "/root/anaconda-ks.cfg"
 }
 
-remove_net_scripts() {
-    verbose 'Removing network scripts'
-    for scr in /etc/sysconfig/network-scripts/ifcfg-*; do
-        [[ -f "$scr" ]] || continue
-        [[ "$scr" == */ifcfg-lo ]] && continue
-        verbose "- $scr"
-        do_cmd rm -f "$scr"
-    done
-    verbose "Creating generic network settings"
-    do_cmd write_file '/etc/sysconfig/network' < /dev/null
-    do_cmd write_file '/etc/sysconfig/network-scripts/ifcfg-eth0' <<EOF
-DEVICE=eth0
-TYPE=Ethernet
-ONBOOT=yes
-BOOTPROTO=dhcp
-EOF
+remove_net_identifiers() {
+    verbose 'Removing net identifiers'
+        do_cmd sed -i '/^(HWADDR|UUID)=/d' /etc/sysconfig/network-scripts/ifcfg-e*
 }
 
 remove_net_persistent() {
@@ -141,6 +145,20 @@ clean_logs() {
         do_cmd rm -f "$log"
     done
 }
+
+remove_tmpfiles() {
+    verbose 'Removing tmp files'
+        do_cmd rm -rf "/tmp/*"
+        do_cmd rm -rf "/var/tmp/*"
+}
+
+remove_history() {
+    verbose 'Removing bash history'
+        do_cmd rm -f "/root/.bash_history"
+        do_cmd unset HISTFILE
+        do_cmd history –c
+}
+
 
 write_file() {
     cat > "$1"
